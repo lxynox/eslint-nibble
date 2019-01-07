@@ -79,12 +79,13 @@ let cli = {
         const results = stats
           .filter(stat => stat)
           .map(stat => {
-            const ruleName = stat.split(':')[0];
+            const [ruleName, info] = stat.split(':');
 
             return {
               name : stat,
               value: ruleName,
-              short: ruleName
+              short: ruleName,
+              cnt: parseInt(info.slice(0, info.indexOf('[39m')).split(/\[35m/)[1])
             };
           })
           // Only include allowed rules, if given
@@ -109,59 +110,64 @@ let cli = {
         let summary = nibbler.getFormattedResults(report, fmt.summary);
         console.log(summary);
 
+        results
+          .sort((res1, res2) => res2.cnt - res1.cnt)
+          .forEach(({ name }) => console.log(name))
+
+
         // Ask user for the rule to narrow in on
-        inquirer.prompt([{
-          name    : 'rule',
-          type    : 'list',
-          message : 'Which rule would you like to fix?',
-          choices : results,
-          pageSize: results.length
-        },
-        {
-          name   : 'fix',
-          type   : 'confirm',
-          message: 'Would you like to attempt to auto-fix?',
-          default: false,
-          when(answers) {
-            let ruleReport = nibbler.getRuleResults(report, answers.rule);
-            return ruleReport.fixableErrorCount > 0 || ruleReport.fixableWarningCount > 0;
-          }
-        },
-        {
-          name   : 'fixWarnings',
-          type   : 'confirm',
-          message: 'Autofix warnings?',
-          default: true,
-          when(answers) {
-            if (!answers.fix) return false;
+        // inquirer.prompt([{
+        //   name    : 'rule',
+        //   type    : 'list',
+        //   message : 'Which rule would you like to fix?',
+        //   choices : [] || results,
+        //   // pageSize: results.length
+        // },
+        // {
+        //   name   : 'fix',
+        //   type   : 'confirm',
+        //   message: 'Would you like to attempt to auto-fix?',
+        //   default: false,
+        //   when(answers) {
+        //     let ruleReport = nibbler.getRuleResults(report, answers.rule);
+        //     return ruleReport.fixableErrorCount > 0 || ruleReport.fixableWarningCount > 0;
+        //   }
+        // },
+        // {
+        //   name   : 'fixWarnings',
+        //   type   : 'confirm',
+        //   message: 'Autofix warnings?',
+        //   default: true,
+        //   when(answers) {
+        //     if (!answers.fix) return false;
 
-            let ruleReport = nibbler.getRuleResults(report, answers.rule);
-            return ruleReport.fixableWarningCount > 0;
-          }
-        }])
-          .then(function gotInput(answers) {
-            // Display detailed error reports
-            let ruleName = answers.rule;
+        //     let ruleReport = nibbler.getRuleResults(report, answers.rule);
+        //     return ruleReport.fixableWarningCount > 0;
+        //   }
+        // }])
+        //   .then(function gotInput(answers) {
+            // {}            // // Display detailed error reports
+            // let ruleName = answers.rule;
 
-            if (answers.fix) {
-              const fixOptions = {
-                rules   : [ruleName],
-                warnings: answers.fixWarnings
-              };
-              const fixedReport = fix(files, fixOptions, configuration);
-              let ruleResults = nibbler.getRuleResults(fixedReport, ruleName);
-              if (ruleResults.errorCount > 0 || ruleResults.warningCount > 0) {
-                let detailed = nibbler.getFormattedResults(ruleResults, fmt.detailed);
-                console.log(detailed);
-              } else {
-                console.log(chalk.green(`Fixes applied, ${ruleName} is now passing`));
-              }
-            } else {
-              let ruleResults = nibbler.getRuleResults(report, ruleName);
-              let detailed = nibbler.getFormattedResults(ruleResults, fmt.detailed);
-              console.log(detailed);
-            }
-          });
+            // if (answers.fix) {
+            //   const fixOptions = {
+            //     rules   : [ruleName],
+            //     warnings: answers.fixWarnings
+            //   };
+            //   const fixedReport = fix(files, fixOptions, configuration);
+            //   let ruleResults = nibbler.getRuleResults(fixedReport, ruleName);
+            //   if (ruleResults.errorCount > 0 || ruleResults.warningCount > 0) {
+            //     let detailed = nibbler.getFormattedResults(ruleResults, fmt.detailed);
+            //     console.log(detailed);
+            //   } else {
+            //     console.log(chalk.green(`Fixes applied, ${ruleName} is now passing`));
+            //   }
+            // } else {
+            //   let ruleResults = nibbler.getRuleResults(report, ruleName);
+            //   let detailed = nibbler.getFormattedResults(ruleResults, fmt.detailed);
+            //   console.log(detailed);
+            // }
+          // });
 
       // No report or not any errors or warnings
       } else {
